@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bible Study Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .api-key-setup {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .api-key-setup h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .api-key-setup p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .api-key-setup input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .api-key-setup button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .api-key-setup button:hover {
+            transform: translateY(-2px);
+        }
+
+        .api-key-setup a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            gap: 10px;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant .message-content {
+            background: #f1f3f4;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-container input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-container input:focus {
+            border-color: #667eea;
+        }
+
+        .input-container button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            white-space: nowrap;
+        }
+
+        .input-container button:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .input-container button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: flex;
+            gap: 5px;
+            padding: 12px 16px;
+        }
+
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        .clear-button {
+            background: #ff6b6b !important;
+            margin-top: 10px;
+        }
+
+        .translation-selector {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .translation-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .translation-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .translation-selector label {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            min-width: 140px;
+        }
+
+        .translation-selector select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .translation-selector select:focus {
+            border-color: #667eea;
+        }
+
+        .compare-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+
+        .compare-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .compare-toggle label {
+            margin: 0;
+            min-width: auto;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .secondary-translation {
+            display: none;
+        }
+
+        .secondary-translation.active {
+            display: flex;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📖 Bible Study Assistant</h1>
+            <p>Explore Scripture with Llama AI • Completely Free</p>
+        </div>
+
+        <!-- API Key Setup Screen -->
+        <div id="apiKeySetup" class="api-key-setup">
+            <h2>Welcome! Let's Get Started</h2>
+            <p>
+                To use this assistant, you'll need a free Groq API key. Groq provides free access to 
+                Llama AI models with incredibly fast response times. Your key is stored only in your 
+                browser and never sent anywhere except directly to Groq's API.
+            </p>
+            <p>
+                Get your free API key at: <a href="https://console.groq.com/" target="_blank">console.groq.com</a>
+                <br><small>(No credit card required!)</small>
+            </p>
+            <input 
+                type="password" 
+                id="apiKeyInput" 
+                placeholder="Enter your Groq API key (gsk_...)"
+            />
+            <button onclick="saveApiKey()">Start Studying</button>
+        </div>
+
+        <!-- Chat Interface (hidden until API key is set) -->
+        <div id="chatInterface" class="hidden">
+            <!-- Bible Translation Selector -->
+            <div class="translation-selector">
+                <div class="translation-row">
+                    <label for="translationSelect">📖 Primary Translation:</label>
+                    <select id="translationSelect" onchange="changeTranslation()">
+                        <option value="ESV">ESV (English Standard Version)</option>
+                        <option value="NIV">NIV (New International Version)</option>
+                        <option value="KJV">KJV (King James Version)</option>
+                        <option value="NKJV">NKJV (New King James Version)</option>
+                        <option value="NASB">NASB (New American Standard Bible)</option>
+                        <option value="NLT">NLT (New Living Translation)</option>
+                        <option value="CSB">CSB (Christian Standard Bible)</option>
+                        <option value="MSG">MSG (The Message)</option>
+                        <option value="AMP">AMP (Amplified Bible)</option>
+                        <option value="NRSV">NRSV (New Revised Standard Version)</option>
+                        <option value="TYNDALE">TYNDALE (William Tyndale Bible)</option>
+                    </select>
+                </div>
+                
+                <div class="translation-row secondary-translation" id="secondaryTranslationRow">
+                    <label for="translationSelect2">📖 Compare With:</label>
+                    <select id="translationSelect2" onchange="changeTranslation()">
+                        <option value="NIV">NIV (New International Version)</option>
+                        <option value="ESV">ESV (English Standard Version)</option>
+                        <option value="KJV">KJV (King James Version)</option>
+                        <option value="NKJV">NKJV (New King James Version)</option>
+                        <option value="NASB">NASB (New American Standard Bible)</option>
+                        <option value="NLT">NLT (New Living Translation)</option>
+                        <option value="CSB">CSB (Christian Standard Bible)</option>
+                        <option value="MSG">MSG (The Message)</option>
+                        <option value="AMP">AMP (Amplified Bible)</option>
+                        <option value="NRSV">NRSV (New Revised Standard Version)</option>
+                        <option value="TYNDALE">TYNDALE (William Tyndale Bible)</option>
+                    </select>
+                </div>
+                
+                <div class="compare-toggle">
+                    <input type="checkbox" id="compareMode" onchange="toggleCompareMode()">
+                    <label for="compareMode">Enable Translation Comparison</label>
+                </div>
+            </div>
+
+            <div id="chatContainer" class="chat-container">
+                <div class="message assistant">
+                    <div class="message-content">
+                        Hello! I'm your Bible study assistant. I can help you explore Scripture, understand 
+                        difficult passages, discuss theological concepts, and answer questions about the Bible. 
+                        What would you like to study today?
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    id="userInput" 
+                    placeholder="Ask about any Bible passage or topic..."
+                    onkeypress="handleKeyPress(event)"
+                />
+                <button onclick="sendMessage()" id="sendButton">Send</button>
+            </div>
+            <div class="input-container">
+                <button onclick="clearConversation()" class="clear-button">Clear Conversation</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /*
+         * ==========================================
+         * AI CONCEPT #1: SYSTEM PROMPTS
+         * ==========================================
+         * A system prompt defines the AI's behavior, personality, and role.
+         * It's like giving someone detailed instructions about their job before they start working.
+         * The AI doesn't "remember" this between sessions - it's provided fresh each time.
+         * 
+         * Notice how we make this dynamic - the translation preference gets inserted
+         * into the prompt, which guides the AI to use the correct Bible version.
+         * 
+         * NEW: We can also enable comparison mode to have the AI quote verses in
+         * two different translations side by side!
+         */
+        
+        // Store the selected Bible translations
+        let selectedTranslation = localStorage.getItem('bible_translation') || 'ESV';
+        let selectedTranslation2 = localStorage.getItem('bible_translation2') || 'NIV';
+        let comparisonMode = localStorage.getItem('comparison_mode') === 'true' || false;
+        
+        // Function to generate system prompt based on selected translation(s)
+        function getSystemPrompt() {
+            if (comparisonMode) {
+                return `You are a knowledgeable and thoughtful Bible study assistant. Your role is to:
+
+1. Help users understand Scripture in its historical and cultural context
+2. Explain difficult passages and theological concepts clearly
+3. Provide balanced perspectives on interpretive questions
+4. Encourage deeper reflection and personal application
+5. Be respectful of different Christian traditions while maintaining biblical faithfulness
+
+IMPORTANT TRANSLATION COMPARISON MODE: The user wants to compare Bible translations.
+- Primary translation: ${selectedTranslation} (${getTranslationFullName(selectedTranslation)})
+- Comparison translation: ${selectedTranslation2} (${getTranslationFullName(selectedTranslation2)})
+
+When quoting or citing Scripture, ALWAYS provide the verse in BOTH translations like this:
+**${selectedTranslation}**: [quote the verse]
+**${selectedTranslation2}**: [quote the verse]
+
+Then briefly note any significant differences between the translations.
+
+Guidelines:
+- Always cite specific Bible verses when referencing Scripture
+- Always show both translations for every verse quoted
+- Highlight meaningful differences in wording, emphasis, or interpretation
+- Acknowledge when questions involve interpretive debates
+- Encourage users to read passages in context
+- Be warm, patient, and encouraging
+- Never be dogmatic about secondary theological issues`;
+            } else {
+                return `You are a knowledgeable and thoughtful Bible study assistant. Your role is to:
+
+1. Help users understand Scripture in its historical and cultural context
+2. Explain difficult passages and theological concepts clearly
+3. Provide balanced perspectives on interpretive questions
+4. Encourage deeper reflection and personal application
+5. Be respectful of different Christian traditions while maintaining biblical faithfulness
+
+IMPORTANT: When citing or quoting Scripture, use the ${selectedTranslation} (${getTranslationFullName(selectedTranslation)}) translation unless the user specifically requests a different version.
+
+Guidelines:
+- Always cite specific Bible verses when referencing Scripture
+- Use the ${selectedTranslation} translation for all Scripture references
+- Acknowledge when questions involve interpretive debates
+- Encourage users to read passages in context
+- Be warm, patient, and encouraging
+- Never be dogmatic about secondary theological issues`;
+            }
+        }
+        
+        // Helper function to get full translation name
+        function getTranslationFullName(abbr) {
+            const translations = {
+                'ESV': 'English Standard Version',
+                'NIV': 'New International Version',
+                'KJV': 'King James Version',
+                'NKJV': 'New King James Version',
+                'NASB': 'New American Standard Bible',
+                'NLT': 'New Living Translation',
+                'CSB': 'Christian Standard Bible',
+                'MSG': 'The Message',
+                'AMP': 'Amplified Bible',
+                'NRSV': 'New Revised Standard Version',
+                'TYNDALE': 'William Tyndale Bible'
+            };
+            return translations[abbr] || abbr;
+        }
+
+        /*
+         * ==========================================
+         * AI CONCEPT #2: CONVERSATION MEMORY
+         * ==========================================
+         * AI models don't actually "remember" past conversations. Each API call is independent.
+         * To create the illusion of memory, we store the entire conversation history and 
+         * send it with every new message. The AI sees the full context each time.
+         * 
+         * This array stores messages in the format the Anthropic API expects:
+         * { role: "user" | "assistant", content: "message text" }
+         */
+        let conversationHistory = [];
+
+        /*
+         * ==========================================
+         * AI CONCEPT #3: API AUTHENTICATION
+         * ==========================================
+         * API keys are like passwords that prove you're authorized to use the AI service.
+         * We store it in localStorage so users don't have to re-enter it each time.
+         * IMPORTANT: In production apps, you'd never expose API keys in client-side code.
+         * This is for learning purposes only.
+         */
+        let apiKey = localStorage.getItem('groq_api_key');
+
+        // Check if API key exists when page loads
+        window.onload = function() {
+            if (apiKey) {
+                document.getElementById('apiKeySetup').classList.add('hidden');
+                document.getElementById('chatInterface').classList.remove('hidden');
+                
+                // Restore saved translations
+                document.getElementById('translationSelect').value = selectedTranslation;
+                document.getElementById('translationSelect2').value = selectedTranslation2;
+                
+                // Restore comparison mode
+                document.getElementById('compareMode').checked = comparisonMode;
+                if (comparisonMode) {
+                    document.getElementById('secondaryTranslationRow').classList.add('active');
+                }
+                
+                // Show welcome message with current translation(s)
+                showWelcomeMessage();
+            }
+        };
+        
+        function showWelcomeMessage() {
+            const chatContainer = document.getElementById('chatContainer');
+            let message = '';
+            
+            if (comparisonMode) {
+                message = `Hello! I'm your Bible study assistant in comparison mode. I'll be comparing the ${selectedTranslation} (${getTranslationFullName(selectedTranslation)}) with the ${selectedTranslation2} (${getTranslationFullName(selectedTranslation2)}) translation. When you ask about specific verses, I'll show you both translations side by side and highlight any meaningful differences. What would you like to study today?`;
+            } else {
+                message = `Hello! I'm your Bible study assistant, and I'll be using the ${selectedTranslation} (${getTranslationFullName(selectedTranslation)}) translation. I can help you explore Scripture, understand difficult passages, discuss theological concepts, and answer questions about the Bible. What would you like to study today?`;
+            }
+            
+            chatContainer.innerHTML = `
+                <div class="message assistant">
+                    <div class="message-content">${message}</div>
+                </div>
+            `;
+        }
+        
+        function toggleCompareMode() {
+            comparisonMode = document.getElementById('compareMode').checked;
+            localStorage.setItem('comparison_mode', comparisonMode);
+            
+            // Show/hide secondary translation dropdown
+            const secondaryRow = document.getElementById('secondaryTranslationRow');
+            if (comparisonMode) {
+                secondaryRow.classList.add('active');
+            } else {
+                secondaryRow.classList.remove('active');
+            }
+            
+            // Clear conversation and show new welcome message
+            conversationHistory = [];
+            showWelcomeMessage();
+        }
+        
+        function changeTranslation() {
+            const select1 = document.getElementById('translationSelect');
+            const select2 = document.getElementById('translationSelect2');
+            
+            selectedTranslation = select1.value;
+            selectedTranslation2 = select2.value;
+            
+            // Save to localStorage
+            localStorage.setItem('bible_translation', selectedTranslation);
+            localStorage.setItem('bible_translation2', selectedTranslation2);
+            
+            // Clear conversation and show new welcome message
+            conversationHistory = [];
+            showWelcomeMessage();
+        }
+
+        function saveApiKey() {
+            const input = document.getElementById('apiKeyInput');
+            apiKey = input.value.trim();
+            
+            if (!apiKey) {
+                alert('Please enter an API key');
+                return;
+            }
+            
+            if (!apiKey.startsWith('gsk_')) {
+                alert('Groq API keys should start with gsk_');
+                return;
+            }
+            
+            // Store in browser's localStorage
+            localStorage.setItem('groq_api_key', apiKey);
+            
+            // Show chat interface
+            document.getElementById('apiKeySetup').classList.add('hidden');
+            document.getElementById('chatInterface').classList.remove('hidden');
+            
+            // Set translation selectors
+            document.getElementById('translationSelect').value = selectedTranslation;
+            document.getElementById('translationSelect2').value = selectedTranslation2;
+            
+            // Set comparison mode
+            document.getElementById('compareMode').checked = comparisonMode;
+            if (comparisonMode) {
+                document.getElementById('secondaryTranslationRow').classList.add('active');
+            }
+            
+            // Show welcome message
+            showWelcomeMessage();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Clear input and disable send button
+            input.value = '';
+            const sendButton = document.getElementById('sendButton');
+            sendButton.disabled = true;
+            
+            // Display user message
+            displayMessage('user', message);
+            
+            /*
+             * ==========================================
+             * AI CONCEPT #4: BUILDING CONVERSATION CONTEXT
+             * ==========================================
+             * Add the user's message to our conversation history.
+             * This history will be sent to the API so the AI has full context.
+             */
+            conversationHistory.push({
+                role: 'user',
+                content: message
+            });
+            
+            // Show loading indicator
+            showLoading();
+            
+            try {
+                /*
+                 * ==========================================
+                 * AI CONCEPT #5: API CALLS
+                 * ==========================================
+                 * This is where we actually communicate with the AI.
+                 * 
+                 * Groq uses an OpenAI-compatible API format. We send:
+                 * 1. An array of messages including:
+                 *    - System message first (defines behavior)
+                 *    - Full conversation history (provides context)
+                 * 2. The model name (we're using Llama 3.1 70B)
+                 * 3. Configuration (max response length, temperature for creativity)
+                 */
+                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'llama-3.1-70b-versatile',
+                        messages: [
+                            // System message goes first to set behavior
+                            // Note: We call getSystemPrompt() to include the current translation
+                            { role: 'system', content: getSystemPrompt() },
+                            // Then all the conversation history
+                            ...conversationHistory
+                        ],
+                        max_tokens: 2048,
+                        temperature: 0.7
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+                }
+                
+                const data = await response.json();
+                
+                /*
+                 * ==========================================
+                 * AI CONCEPT #6: PROCESSING RESPONSES
+                 * ==========================================
+                 * The API returns the AI's response in a specific format.
+                 * With Groq/OpenAI format, the response is in data.choices[0].message.content
+                 * We extract the text and add it to our conversation history.
+                 */
+                const assistantMessage = data.choices[0].message.content;
+                
+                // Add AI response to conversation history
+                conversationHistory.push({
+                    role: 'assistant',
+                    content: assistantMessage
+                });
+                
+                // Display AI response
+                hideLoading();
+                displayMessage('assistant', assistantMessage);
+                
+            } catch (error) {
+                hideLoading();
+                displayMessage('assistant', `Sorry, I encountered an error: ${error.message}. Please check your API key and try again.`);
+                console.error('Error:', error);
+            }
+            
+            // Re-enable send button
+            sendButton.disabled = false;
+            input.focus();
+        }
+
+        function displayMessage(role, content) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            
+            messageDiv.appendChild(contentDiv);
+            chatContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showLoading() {
+            const chatContainer = document.getElementById('chatContainer');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message assistant';
+            loadingDiv.id = 'loadingIndicator';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content loading';
+            contentDiv.innerHTML = `
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+            `;
+            
+            loadingDiv.appendChild(contentDiv);
+            chatContainer.appendChild(loadingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function hideLoading() {
+            const loading = document.getElementById('loadingIndicator');
+            if (loading) {
+                loading.remove();
+            }
+        }
+
+        function clearConversation() {
+            if (confirm('Are you sure you want to clear the conversation? This cannot be undone.')) {
+                /*
+                 * ==========================================
+                 * AI CONCEPT #7: MANAGING MEMORY
+                 * ==========================================
+                 * Clearing the conversation is as simple as emptying our history array.
+                 * The AI has no independent memory - it only knows what we send it.
+                 */
+                conversationHistory = [];
+                
+                // Show fresh welcome message
+                showWelcomeMessage();
+            }
+        }
+    </script>
+</body>
+</html>
